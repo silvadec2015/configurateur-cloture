@@ -7,7 +7,7 @@ import { TARIF_DEMO } from '../src/data/tarifs.js';
 
 const projet = calepiner({
   ...CONFIG_DEFAUT,
-  gamme: 'pu11',
+  gamme: 'atmosphere',
   nbLames: 8,
   pose: 'platine',
   segments: [{ longueur: 9000 }],
@@ -16,10 +16,10 @@ const projet = calepiner({
 test('Chaque quantite du calepinage se retrouve dans la nomenclature', () => {
   const n = construireNomenclature(projet, TARIF_DEMO);
   const ligne = (ref) => n.lignes.find((l) => l.ref === ref);
-  assert.equal(ligne('lame_pu11').quantite, projet.quantites.nbLamesTotal);
+  assert.equal(ligne('lame_atmosphere').quantite, projet.quantites.nbLamesTotal);
   assert.equal(ligne('platine').quantite, projet.quantites.nbPlatines);
   assert.equal(ligne('goujon').quantite, projet.quantites.nbGoujons);
-  assert.equal(ligne('lisse_haute').quantite, projet.quantites.nbLisseHaute);
+  assert.equal(ligne('lisse').quantite, projet.quantites.nbLisseHaute + projet.quantites.nbLisseBasse);
   assert.equal(ligne('connecteur').quantite, projet.quantites.nbConnecteurs);
 });
 
@@ -44,10 +44,10 @@ test('Export CSV : un en-tete, une ligne par article et un total', () => {
   const n = construireNomenclature(projet, TARIF_DEMO);
   const lignes = nomenclatureVersCSV(n).split('\n');
   assert.equal(lignes.length, n.lignes.length + 2);
-  assert.ok(lignes[0].startsWith('Reference;Designation'));
+  assert.ok(lignes[0].startsWith('Référence;Désignation'));
   assert.ok(lignes.at(-1).includes('TOTAL HT'));
 });
 
-test('Le tarif de demonstration est explicitement marque comme non reel', () => {
+test('Le tarif de démonstration est explicitement marque comme non reel', () => {
   assert.equal(TARIF_DEMO.reel, false);
 });

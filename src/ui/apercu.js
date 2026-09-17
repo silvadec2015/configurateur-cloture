@@ -1,5 +1,5 @@
 /**
- * Apercu SVG : vue en elevation d'une travee type (poteaux, empilement des
+ * Apercu SVG : vue en élévation d’une travee type (poteaux, empilement des
  * lames, lisses) et vue en plan du trace.
  */
 
@@ -12,7 +12,7 @@ function el(nom, attrs = {}) {
 }
 
 /**
- * Vue en elevation d'une travee.
+ * Vue en élévation d’une travee.
  * @param {object} calepinage resultat de `calepiner()`
  * @param {string} couleur couleur des lames
  */
@@ -28,7 +28,7 @@ export function apercuElevation(calepinage, couleur = '#3b3f44') {
     class: 'apercu',
     viewBox: `0 0 ${largeurMm} ${hauteurMm}`,
     role: 'img',
-    'aria-label': `Elevation d'une travee : ${config.nbLames} lames, ${hauteurs.empilement} mm de hauteur`,
+    'aria-label': `Élévation d’une travee : ${config.nbLames} lames, ${hauteurs.empilement} mm de hauteur`,
   });
 
   const sol = hauteurMm - 120;
@@ -94,7 +94,7 @@ export function apercuPlan(calepinage) {
   const svg = el('svg', { class: 'apercu', viewBox: '0 0 400 220', role: 'img', 'aria-label': 'Vue en plan du trace' });
   if (!segments.length) return svg;
 
-  // Trace en zigzag a 90 degres, direction alternee (droite puis bas).
+  // Trace en zigzag a 90 degrés, direction alternee (droite puis bas).
   const total = segments.reduce((t, s) => t + Number(s.longueur), 0);
   let x = 40;
   let y = 60;

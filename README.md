@@ -1,17 +1,24 @@
-# Configurateur cloture & portillon
+# Configurateur clôture & portillon
 
-Calculette web qui transforme un projet de cloture (claustra + portillon) en
-**calepinage**, **nomenclature complete** et **estimation chiffree**, sur le
-modele des configurateurs de devis en ligne.
+Calculette web qui transforme un projet de clôture en **calepinage**,
+**nomenclature complète** et **estimation chiffrée**, sur le modèle des
+configurateurs de devis en ligne.
 
-Le moteur de calcul applique les regles des notices de montage fournies :
-`PU11 V23` (claustra bois composite), `PU36 V3` (claustra aluminium) et
-`PU41 V1` (claustra persienne aluminium). Chaque cote utilisee est tracee dans
-[`docs/regles-techniques.md`](docs/regles-techniques.md) avec sa page d'origine.
+Deux sources alimentent le configurateur, sans jamais être mélangées :
 
-## Demarrer
+- les **notices de montage** `PU11 V23` (bois composite), `PU36 V3` (aluminium)
+  et `PU41 V1` (persienne aluminium) pour les cotes d'assemblage ;
+- les **fiches produit** du catalogue Silvadec pour les noms commerciaux, les
+  coloris, les dimensions de lame, les garanties, le portillon, les décors et
+  les accessoires.
 
-Aucune dependance, aucun build : le projet est un site statique en modules ES.
+Chaque valeur est tracée dans [`docs/regles-techniques.md`](docs/regles-techniques.md)
+avec sa source. Ce qui n'a pas été confirmé est marqué `A_VALIDER` dans le code
+et signalé dans l'interface.
+
+## Démarrer
+
+Aucune dépendance, aucun build : le projet est un site statique en modules ES.
 Il faut simplement le servir en HTTP (les modules ES ne se chargent pas en
 `file://`).
 
@@ -19,80 +26,112 @@ Il faut simplement le servir en HTTP (les modules ES ne se chargent pas en
 npm start            # http://localhost:8080
 # ou
 python3 -m http.server 8080
-npm test             # 27 tests du moteur de calcul (node --test)
+npm test             # 33 tests du moteur de calcul (node --test)
 ```
 
-## Ce que fait le configurateur
+## Mise en ligne
 
-Un parcours en 5 etapes, avec synthese et apercu permanents :
+Le fichier [`vercel.json`](vercel.json) fixe la configuration d'hébergement
+(aucun build, racine du dépôt servie, URLs sans `.html`) : il suffit d'importer
+le dépôt sur [vercel.com](https://vercel.com) et de déployer. Alternative sans
+service supplémentaire : `Settings` → `Pages` → *Deploy from a branch* → `main`
+/ `/ (root)`.
 
-1. **Gamme** — bois composite, aluminium (occultation totale ou panneau ajoure),
-   persienne aluminium ; coloris.
-2. **Trace** — saisie des segments de la cloture (chaque changement de direction
-   cree un angle a 90 degres), portillon ou portail et sa largeur de passage.
-3. **Hauteur & pose** — nombre de lames ou hauteur visee, bas de panneau
-   (lisse basse ou plaque de soubassement), pose sur platines, scellement beton
-   ou sur muret.
-4. **Options** — decors horizontaux et verticaux, baguettes de finition,
-   fixations murales.
-5. **Recapitulatif** — nomenclature valorisee, points de vigilance chantier,
+Deux points avant de publier : l'URL est publique et expose la grille tarifaire
+embarquée ; et comme les fichiers ne portent pas d'empreinte dans leur nom, les
+en-têtes imposent une revalidation à chaque chargement pour ne pas servir un
+module à jour à côté d'un module périmé.
+
+## Le parcours
+
+Cinq étapes, avec synthèse et aperçu permanents :
+
+1. **Lames** — lame écran Atmosphère, Élégance, Aluminium (panneau plein ou
+   ajouré, entretoises de 15 mm cumulables) ou lame persienne ; finition,
+   coloris de lame et finition des accessoires aluminium.
+2. **Tracé** — segments de la clôture (chaque changement de direction crée un
+   angle à 90 degrés) et portillon aluminium, en pose entre piliers maçonnés ou
+   sur poteaux.
+3. **Hauteur & pose** — nombre de lames ou hauteur visée, bas de panneau (lisse
+   basse ou plaque de soubassement), pose sur platines, scellement béton ou sur
+   muret.
+4. **Décors & accessoires** — décors horizontaux (300 mm, en remplacement de
+   2 lames) et verticaux (panneau dédié de 855 mm), baguettes de finition,
+   départs muraux en demi-poteau.
+5. **Récapitulatif** — nomenclature valorisée, points de vigilance chantier,
    export CSV / JSON, impression PDF et lien de partage du projet.
 
 ### Calculs couverts
 
 - hauteur d'empilement lame par lame (lames, entretoises, lisses haute, basse et
-  intermediaires, plaque de soubassement) ;
-- nombre de lisses intermediaires (jamais plus de 3 lames empilees sans lisse) ;
-- longueur de poteau a recouper et chute par poteau, partie enterree en
-  scellement, hauteur hors sol ;
-- decoupage en travees a l'entraxe de 1800 mm + travee recoupee, avec la
+  intermédiaires, plaque de soubassement) ;
+- nombre de lisses intermédiaires (au minimum une toutes les trois lames) ;
+- longueur de poteau à recouper et chute par poteau, partie enterrée en
+  scellement ; la table du fabricant prime sur le calcul quand elle couvre le
+  nombre de lames choisi ;
+- découpage en panneaux à l'entraxe de 1800 mm plus un panneau recoupé, avec la
   longueur de recoupe des lames et le jeu de dilatation ;
-- quantites : poteaux droits, poteaux d'angle 3 en 1, platines, goujons, capots,
-  lames, entretoises, lisses, connecteurs, decors, beton de scellement ;
-- controles bloquants : limite de hauteur sur platines, muret + claustra
-  <= 2,20 m, poteau plus long que la longueur fournie, ouvrants plus larges que
-  le trace, reliquat de travee trop faible.
+- quantités : poteaux grand vent 3 en 1, demi-poteaux de départ mural, platines,
+  goujons, capots et demi-capots, lames, entretoises (référence dédiée pour la
+  persienne), lisses, connecteurs, décors, poteaux de portillon, béton de
+  scellement ;
+- contrôles bloquants : hauteur maximale annoncée par la fiche produit (1,80 m),
+  limite de hauteur sur platines, muret + clôture ≤ 2,20 m, poteau plus long que
+  la longueur fournie, portillons plus larges que le tracé, reliquat de panneau
+  trop faible ;
+- écarts signalés : hauteur de portillon très différente de celle de la clôture,
+  finition d'accessoires indisponible sur le portillon, divergences entre fiche
+  produit et notice.
 
 ## Architecture
 
 ```
-index.html                 page unique (wizard + synthese)
-assets/css/styles.css      theme clair / sombre, impression
-src/data/catalogue.js      cotes des notices PU11 / PU36 / PU41, poses, coloris, decors
-src/data/tarifs.js         grille tarifaire (DEMONSTRATION - a remplacer)
-src/core/calepinage.js     moteur de calcul (fonctions pures, testees)
-src/core/nomenclature.js   nomenclature valorisee + export CSV
-src/ui/app.js              parcours en etapes, rendu, evenements
-src/ui/apercu.js           apercus SVG (elevation d'une travee, vue en plan)
+index.html                 page unique (parcours + synthèse)
+assets/css/styles.css      thème clair / sombre, impression
+src/data/catalogue.js      cotes des notices + données produit (gammes, coloris,
+                           décors, accessoires, portillon)
+src/data/tarifs.js         grille tarifaire (DÉMONSTRATION — à remplacer)
+src/core/calepinage.js     moteur de calcul (fonctions pures, testées)
+src/core/nomenclature.js   nomenclature valorisée + export CSV
+src/ui/app.js              parcours en étapes, rendu, événements
+src/ui/apercu.js           aperçus SVG (élévation d'un panneau, vue en plan)
 src/ui/etat.js             persistance locale et lien de partage
 tests/                     tests node:test du moteur et de la nomenclature
+vercel.json                configuration d'hébergement statique
 ```
 
-La separation `core` / `ui` permet de reutiliser le moteur ailleurs (API,
+La séparation `core` / `ui` permet de réutiliser le moteur ailleurs (API,
 back-office, script de chiffrage) : `calepiner()` et `construireNomenclature()`
-ne dependent ni du DOM ni d'un framework.
+ne dépendent ni du DOM ni d'un framework.
 
-## Adapter a votre catalogue
+## Adapter à votre catalogue
 
 | Besoin | Fichier |
 |--------|---------|
-| Prix | `src/data/tarifs.js` — remplacer `TARIF_DEMO` par votre tarif et passer `reel: true`, ou mettre `TARIF_ACTIF = null` pour n'afficher que les quantites |
-| Cotes, gammes, hauteurs maxi | `src/data/catalogue.js` |
-| Coloris, decors, portillons | `src/data/catalogue.js` (`COLORIS`, `DECORS`, `OUVRANTS`) |
-| Regles de calcul | `src/core/calepinage.js` |
+| Prix | `src/data/tarifs.js` — remplacer `TARIF_DEMO` par votre tarif et passer `reel: true`, ou mettre `TARIF_ACTIF = null` pour n'afficher que les quantités |
+| Gammes, cotes de lame, hauteurs maxi | `src/data/catalogue.js` (`GAMMES`) |
+| Coloris, décors, accessoires, portillon | `src/data/catalogue.js` (`FINITIONS_ACCESSOIRES`, `DECORS`, `ACCESSOIRES`, `OUVRANTS`) |
+| Règles de calcul | `src/core/calepinage.js` |
 
 ## Limites connues
 
-- **Les prix affiches sont des prix de demonstration**, ils ne proviennent
-  d'aucun tarif fabricant. Ils servent uniquement a faire fonctionner
-  l'estimation.
-- Les **portillons et portails** ne figurent pas dans les notices PU11/PU36/PU41 :
-  leurs cotes et leur quincaillerie sont marquees `A_VALIDER` dans le catalogue.
-- Les angles sont traites a **90 degres** (poteau 3 en 1) ; un autre angle
-  demande une etude specifique, comme l'indiquent les notices.
-- Le **volume de beton** par poteau scelle est une estimation (trou de
+- **Les prix affichés sont des prix de démonstration**, ils ne proviennent
+  d'aucun tarif fabricant.
+- La gamme **Élégance** est citée par la notice PU11 mais sa fiche produit n'a
+  pas été consultée : coloris, finitions et épaisseur de lame restent à
+  renseigner.
+- Aucun **portail** n'est proposé : seule la fiche du portillon aluminium est
+  documentée. L'emprise en pose sur poteaux (1260 mm) additionne la largeur
+  entre poteaux et deux poteaux de 100 mm, ce qui reste une interprétation de la
+  fiche.
+- Deux **incohérences du catalogue** sont signalées plutôt que tranchées :
+  coloris d'accessoires (nuancier contre texte) et caractère optionnel des
+  lisses sur les lames aluminium (fiche contre notice).
+- Les angles sont traités à **90 degrés** (poteau grand vent 3 en 1) ; un autre
+  angle demande une étude spécifique, comme l'indiquent les notices.
+- Le **volume de béton** par poteau scellé est une estimation (trou de
   300 x 300 x 600 mm) et non une valeur de notice.
 - L'estimation porte sur les **fournitures** : ni pose, ni livraison, ni
-  terrassement, ni evacuation des chutes.
-- Le configurateur ne remplace pas la lecture integrale des notices de montage
+  terrassement, ni évacuation des chutes.
+- Le configurateur ne remplace pas la lecture intégrale des notices de montage
   avant chantier.

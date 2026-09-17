@@ -1,29 +1,34 @@
 /**
- * Moteur de calepinage : a partir d'une configuration utilisateur, calcule la
- * hauteur d'empilement, la hauteur de poteau necessaire, le decoupage en
- * travees et les quantites elementaires.
+ * Moteur de calepinage : a partir d’une configuration utilisateur, calcule la
+ * hauteur d’empilement, la hauteur de poteau nécessaire, le decoupage en
+ * panneaux et les quantites elementaires.
  *
  * Toutes les cotes sont en millimetres. Les fonctions sont pures : elles ne
- * touchent ni au DOM ni a l'etat global, ce qui les rend testables avec
+ * touchent ni au DOM ni a l’etat global, ce qui les rend testables avec
  * `node --test`.
  */
 
-import { GAMMES, REGLES_COMMUNES, getGamme, getOuvrant } from '../data/catalogue.js';
+import { GAMMES, REGLES_COMMUNES, getGamme, getOuvrant, getPoseOuvrant } from '../data/catalogue.js';
 
 /** Configuration par defaut du configurateur. */
 export const CONFIG_DEFAUT = {
-  gamme: 'pu11',
-  variante: 'plein', // 'plein' | 'ajoure' (PU36 uniquement)
+  gamme: 'atmosphere',
+  variante: 'plein', // 'plein' | 'ajoure' (gamme aluminium uniquement)
+  /** Nombre d’entretoises empilées entre deux lames en panneau ajouré. */
+  entretoisesEmpilees: 1,
   pose: 'platine',
   hauteurMuret: 0,
   nbLames: 8,
   soubassement: 'lisse_basse', // 'lisse_basse' | 'plaque_soubassement' | 'aucun'
   segments: [{ longueur: 12000 }],
   ouvrant: 'aucun',
+  poseOuvrant: 'sur_poteaux',
   nbOuvrants: 0,
   decorsHorizontaux: 0,
   decorsVerticaux: 0,
   coloris: 'gris_anthracite',
+  finitionLame: null,
+  finitionAccessoires: 'gris_anthracite',
   baguetteFinition: false,
   poteauxMuraux: 0,
 };
@@ -31,8 +36,8 @@ export const CONFIG_DEFAUT = {
 const round = (v) => Math.round(v);
 
 /**
- * Nombre de lisses intermediaires necessaires.
- * PU11 p.6 : jamais plus de 3 lames empilees sans lisse intermediaire.
+ * Nombre de lisses intermédiaires nécessaires.
+ * PU11 p.6 : jamais plus de 3 lames empilées sans lisse intermédiaire.
  */
 export function nbLissesIntermediaires(gamme, nbLames) {
   const max = gamme.empilement.lamesMaxEntreLisses;
@@ -41,7 +46,7 @@ export function nbLissesIntermediaires(gamme, nbLames) {
 }
 
 /**
- * Hauteur d'empilement d'un panneau (du sol au dessus de la lisse haute).
+ * Hauteur d’empilement d’un panneau (du sol au dessus de la lisse haute).
  * @returns {{hauteur:number, detail:Array<{poste:string, quantite:number, hauteur:number, total:number}>}}
  */
 export function hauteurEmpilement(config) {
@@ -68,28 +73,31 @@ export function hauteurEmpilement(config) {
   }
 
   // Lames.
-  const ajoure = gamme.id === 'pu36' && config.variante === 'ajoure';
+  const ajoure = gamme.id === 'aluminium' && config.variante === 'ajoure';
   if (ajoure) {
     const a = e.ajoure;
+    // La fiche produit aluminium permet de cumuler les entretoises pour élargir
+    // les claires-voies : chaque interstice en recoit `entretoisesEmpilees`.
+    const parInterstice = Math.max(1, config.entretoisesEmpilees || 1);
     ajoute('Lames (entre entretoises)', nbLames, a.lameEntreEntretoises);
-    ajoute('Entretoises', Math.max(0, nbLames - 1), a.entretoise);
+    ajoute('Entretoises', Math.max(0, nbLames - 1) * parInterstice, a.entretoise);
   } else {
     ajoute('Premiere lame', 1, e.premiereLame);
     ajoute('Lames suivantes', nbLames - 1, e.lameSuivante);
   }
 
-  // Lisses intermediaires.
+  // Lisses intermédiaires.
   const nbInter = nbLissesIntermediaires(gamme, nbLames);
-  ajoute('Lisses intermediaires', nbInter, e.lisseIntermediaire);
+  ajoute('Lisses intermédiaires', nbInter, e.lisseIntermediaire);
 
-  // Lisse haute (pose imperative sur les trois gammes).
+  // Lisse haute (pose impérative sur les trois gammes).
   ajoute('Lisse haute', 1, e.lisseHaute);
 
   return { hauteur: round(total), detail, nbLissesIntermediaires: nbInter };
 }
 
 /**
- * Nombre de lames le plus proche d'une hauteur de claustra visee.
+ * Nombre de lames le plus proche d’une hauteur de claustra visée.
  * @returns {{nbLames:number, hauteur:number, alternatives:Array}}
  */
 export function nbLamesPourHauteur(config, hauteurCible) {
@@ -98,32 +106,32 @@ export function nbLamesPourHauteur(config, hauteurCible) {
   for (let n = 1; n <= 30; n++) {
     const h = hauteurEmpilement({ ...config, nbLames: n }).hauteur;
     alternatives.push({ nbLames: n, hauteur: h });
-    const ecart = Math.abs(h - hauteurCible);
-    if (!meilleur || ecart < meilleur.ecart) meilleur = { nbLames: n, hauteur: h, ecart };
+    const écart = Math.abs(h - hauteurCible);
+    if (!meilleur || écart < meilleur.écart) meilleur = { nbLames: n, hauteur: h, écart };
   }
   return { nbLames: meilleur.nbLames, hauteur: meilleur.hauteur, alternatives };
 }
 
 /**
- * Hauteur de poteau necessaire selon le type de pose.
+ * Hauteur de poteau nécessaire selon le type de pose.
  *
  * Deux valeurs sont produites :
- *  - `longueurPoteauCalculee` : derivee des cotes de calepinage de la notice
+ *  - `longueurPoteauCalculee` : dérivée des cotes de calepinage de la notice
  *    (support de platine + empilement + jeu haut de poteau, plus la partie
- *    enterree en scellement) ;
+ *    enterrée en scellement) ;
  *  - `longueurPoteau` : valeur retenue. Lorsque la table du fabricant couvre
- *    le nombre de lames choisi, c'est elle qui fait foi (les notices donnent
- *    des hauteurs de poteau minimales legerement differentes du calcul).
+ *    le nombre de lames choisi, c’est elle qui fait foi (les notices donnent
+ *    des hauteurs de poteau minimales légèrement différentes du calcul).
  */
-export function calculPoteau(config, hauteurClaustra) {
+export function calculPoteau(config, hauteurCloture) {
   const gamme = getGamme(config.gamme);
   const e = gamme.empilement;
   const p = gamme.poteau;
   const alertes = [];
 
   const surPlatine = config.pose === 'platine' || config.pose === 'muret';
-  const hauteurClaustraHorsSol = round((surPlatine ? e.supportPlatine : 0) + hauteurClaustra);
-  const hauteurHorsSolCalculee = round(hauteurClaustraHorsSol + e.jeuHautPoteau);
+  const hauteurClotureHorsSol = round((surPlatine ? e.supportPlatine : 0) + hauteurCloture);
+  const hauteurHorsSolCalculee = round(hauteurClotureHorsSol + e.jeuHautPoteau);
   const longueurPoteauCalculee = round(
     hauteurHorsSolCalculee + (config.pose === 'scellement' ? p.profondeurScellement : 0)
   );
@@ -139,14 +147,14 @@ export function calculPoteau(config, hauteurClaustra) {
     ? round(longueurPoteau - p.profondeurScellement)
     : longueurPoteau;
 
-  // La table du fabricant valide d'office la pose sur platines qu'elle decrit.
+  // La table du fabricant valide d’office la pose sur platines qu’elle decrit.
   const platineValideeParTable = Boolean(surPlatine && reference && reference.poteauPlatine);
   if (surPlatine && !platineValideeParTable && hauteurHorsSol > p.hauteurMaxPlatine) {
     alertes.push({
       niveau: 'erreur',
       message:
-        `La pose sur platines double coque est limitee a ${p.hauteurMaxPlatine} mm de poteau hors sol ` +
-        `(${gamme.notice}). Hauteur necessaire : ${hauteurHorsSol} mm. Passez en scellement beton ou ` +
+        `La pose sur platines double coque est limitée a ${p.hauteurMaxPlatine} mm de poteau hors sol ` +
+        `(${gamme.notice}). Hauteur nécessaire : ${hauteurHorsSol} mm. Passez en scellement béton ou ` +
         `reduisez le nombre de lames.`,
     });
   }
@@ -154,26 +162,26 @@ export function calculPoteau(config, hauteurClaustra) {
     alertes.push({
       niveau: 'erreur',
       message:
-        `Le poteau necessaire (${longueurPoteau} mm) depasse la longueur fournie de ${p.longueurFournie} mm.`,
+        `Le poteau nécessaire (${longueurPoteau} mm) dépasse la longueur fournie de ${p.longueurFournie} mm.`,
     });
   }
   if (config.pose === 'muret') {
-    const total = config.hauteurMuret + hauteurClaustra;
-    if (total > REGLES_COMMUNES.hauteurMaxMuretPlusClaustra) {
+    const total = config.hauteurMuret + hauteurCloture;
+    if (total > REGLES_COMMUNES.hauteurMaxMuretPlusCloture) {
       alertes.push({
         niveau: 'erreur',
         message:
-          `Securite : muret + claustra = ${total} mm, au-dela du maximum de ` +
-          `${REGLES_COMMUNES.hauteurMaxMuretPlusClaustra} mm (PU41 p.3).`,
+          `Sécurité : muret + claustra = ${total} mm, au-dela du maximum de ` +
+          `${REGLES_COMMUNES.hauteurMaxMuretPlusCloture} mm (PU41 p.3).`,
       });
     }
   }
-  if (hauteurClaustra > 1815 && config.pose !== 'scellement') {
+  if (hauteurCloture > 1815 && config.pose !== 'scellement') {
     alertes.push({
       niveau: 'info',
       message:
-        `La tenue au vent annoncee (${REGLES_COMMUNES.ventMaxKmH} km/h en site normal) couvre les claustras ` +
-        `jusqu'a 1815 mm de hauteur avec scellement beton.`,
+        `La tenue au vent annoncée (${REGLES_COMMUNES.ventMaxKmH} km/h en site normal) couvre les claustras ` +
+        `jusqu’à 1815 mm de hauteur avec scellement béton.`,
     });
   }
   if (reference && Math.abs(longueurPoteauCalculee - longueurPoteau) > 5) {
@@ -186,7 +194,7 @@ export function calculPoteau(config, hauteurClaustra) {
   }
 
   return {
-    hauteurClaustraHorsSol,
+    hauteurClotureHorsSol,
     hauteurHorsSol,
     longueurPoteau,
     longueurPoteauCalculee,
@@ -199,30 +207,30 @@ export function calculPoteau(config, hauteurClaustra) {
 }
 
 /**
- * Decoupage d'une longueur en travees : des travees pleines a l'entraxe
- * nominal (1800 mm) plus, si necessaire, une travee recoupee.
+ * Decoupage d’une longueur en panneaux : des panneaux pleins à l’entraxe
+ * nominal (1800 mm) plus, si nécessaire, un panneau recoupé.
  */
-export function decoupeTravees(longueur, entraxe = REGLES_COMMUNES.entraxePoteaux) {
+export function decoupePanneaux(longueur, entraxe = REGLES_COMMUNES.entraxePoteaux) {
   const alertes = [];
-  if (longueur <= 0) return { pleines: 0, reste: 0, traveeRecoupee: null, alertes };
+  if (longueur <= 0) return { pleines: 0, reste: 0, panneauRecoupe: null, alertes };
 
   const pleines = Math.floor(longueur / entraxe);
   const reste = round(longueur - pleines * entraxe);
-  let traveeRecoupee = null;
+  let panneauRecoupe = null;
 
   if (reste > 0) {
-    if (reste >= REGLES_COMMUNES.largeurTraveeMini) {
-      traveeRecoupee = { largeur: reste };
+    if (reste >= REGLES_COMMUNES.largeurPanneauMini) {
+      panneauRecoupe = { largeur: reste };
     } else {
       alertes.push({
         niveau: 'avertissement',
         message:
-          `Reliquat de ${reste} mm trop faible pour une travee (mini ${REGLES_COMMUNES.largeurTraveeMini} mm). ` +
-          `Repartissez ce reliquat sur les travees voisines en reduisant leur entraxe.`,
+          `Reliquat de ${reste} mm trop faible pour un panneau (mini ${REGLES_COMMUNES.largeurPanneauMini} mm). ` +
+          `Répartissez ce reliquat sur les panneaux voisins en reduisant leur entraxe.`,
       });
     }
   }
-  return { pleines, reste, traveeRecoupee, alertes };
+  return { pleines, reste, panneauRecoupe, alertes };
 }
 
 /**
@@ -244,101 +252,148 @@ export function calepiner(configUtilisateur) {
   const longueurTotale = segments.reduce((t, s) => t + Number(s.longueur), 0);
   const nbAngles = Math.max(0, segments.length - 1);
 
+  const poseOuvrant = getPoseOuvrant(ouvrant, config.poseOuvrant);
   const nbOuvrants = ouvrant.type ? Math.max(0, config.nbOuvrants) : 0;
-  const longueurOuvrants = nbOuvrants * ouvrant.passage;
+  const longueurOuvrants = nbOuvrants * poseOuvrant.emprise;
   const longueurDecorsVerticaux = config.decorsVerticaux * REGLES_COMMUNES.entraxeDecorVertical;
-  const longueurClaustra = round(longueurTotale - longueurOuvrants - longueurDecorsVerticaux);
+  const longueurCloture = round(longueurTotale - longueurOuvrants - longueurDecorsVerticaux);
 
-  if (longueurClaustra < 0) {
+  if (longueurCloture < 0) {
     alertes.push({
       niveau: 'erreur',
       message:
-        `Les ouvrants (${longueurOuvrants} mm) et decors verticaux (${longueurDecorsVerticaux} mm) ` +
-        `depassent la longueur totale du trace (${longueurTotale} mm).`,
+        `Les ouvrants (${longueurOuvrants} mm) et décors verticaux (${longueurDecorsVerticaux} mm) ` +
+        `dépassent la longueur totale du trace (${longueurTotale} mm).`,
     });
   }
 
-  const decoupe = decoupeTravees(Math.max(0, longueurClaustra));
+  const decoupe = decoupePanneaux(Math.max(0, longueurCloture));
   alertes.push(...decoupe.alertes);
 
-  const nbTraveesClaustra = decoupe.pleines + (decoupe.traveeRecoupee ? 1 : 0);
-  const nbTraveesTotal = nbTraveesClaustra + config.decorsVerticaux;
-  const nbPoteaux = nbTraveesTotal > 0 || nbOuvrants > 0 ? nbTraveesTotal + 1 + nbOuvrants : 0;
-  const nbPoteauxAngle = Math.min(nbAngles, Math.max(0, nbPoteaux - 2));
-  const nbPoteauxExtremite = nbPoteaux > 0 ? 2 : 0;
-  const nbPoteauxIntermediaires = Math.max(0, nbPoteaux - nbPoteauxAngle - nbPoteauxExtremite);
+  const nbPanneauxLames = decoupe.pleines + (decoupe.panneauRecoupe ? 1 : 0);
+  const nbPanneauxTotal = nbPanneauxLames + config.decorsVerticaux;
+  const nbPoteaux = nbPanneauxTotal > 0 || nbOuvrants > 0 ? nbPanneauxTotal + 1 + nbOuvrants : 0;
+  // En pose sur poteaux, les 2 poteaux du portillon (100 x 100 mm) remplacent
+  // des poteaux de clôture ; en pose entre piliers maçonnés, l’ouvrant n’apporte
+  // aucun poteau et la clôture se termine de part et d’autre sur ses propres poteaux.
+  const nbPoteauxOuvrant = nbOuvrants * poseOuvrant.poteauxDedies;
+  const nbPoteauxCloture = Math.max(0, nbPoteaux - nbPoteauxOuvrant);
+  const nbPoteauxAngle = Math.min(nbAngles, Math.max(0, nbPoteauxCloture - 2));
+  const nbPoteauxExtremite = nbPoteauxCloture > 0 ? 2 : 0;
+  const nbPoteauxIntermediaires = Math.max(0, nbPoteauxCloture - nbPoteauxAngle - nbPoteauxExtremite);
 
+  // Un départ contre un mur consomme un demi-poteau au lieu d’un poteau entier.
+  const nbDemiPoteauxMuraux = Math.min(config.poteauxMuraux, nbPoteauxCloture);
+  const nbPoteauxPleins = Math.max(0, nbPoteauxCloture - nbDemiPoteauxMuraux);
+
+  if (gamme.hauteurMaxCloture && empilement.hauteur > gamme.hauteurMaxCloture) {
+    alertes.push({
+      niveau: 'erreur',
+      message:
+        `La fiche produit ${gamme.produit} annonce une clôture réalisable jusqu’à ` +
+        `${gamme.hauteurMaxCloture} mm ; la configuration atteint ${empilement.hauteur} mm.`,
+    });
+  }
+  if (gamme.famille === 'Clôture aluminium') {
+    alertes.push({
+      niveau: 'info',
+      message:
+        `La page accessoires présente les lisses comme optionnelles sur les lames aluminium, alors ` +
+        `que la notice ${gamme.notice} rend la lisse haute impérative. Le chiffrage suit la notice.`,
+    });
+  }
   if (nbAngles > 0) {
     alertes.push({
       niveau: 'info',
       message:
-        `Poteaux 3 en 1 en angle : uniquement pour une intersection a 90 degres, et haubanage ` +
-        `IMPERATIF des poteaux d'angle (${gamme.notice}).`,
+        `Angles : le poteau grand vent 3 en 1 ne convient qu’a une intersection a 90 degrés, et son ` +
+        `haubanage est IMPÉRATIF en angle (${gamme.notice}).`,
     });
   }
 
-  // --- Lames et decors ----------------------------------------------------
-  const decorsHorizontaux = Math.min(config.decorsHorizontaux, nbTraveesClaustra);
+  // --- Lames et décors ----------------------------------------------------
+  const decorsHorizontaux = Math.min(config.decorsHorizontaux, nbPanneauxLames);
   const lamesRemplacees = decorsHorizontaux * gamme.decorHorizontal.remplaceLames;
   const lamesEncadrementSupp = decorsHorizontaux * (gamme.decorHorizontal.lamesEncadrementSupp || 0);
 
-  let nbLamesTotal = nbTraveesClaustra * config.nbLames - lamesRemplacees + lamesEncadrementSupp;
+  let nbLamesTotal = nbPanneauxLames * config.nbLames - lamesRemplacees + lamesEncadrementSupp;
   nbLamesTotal = Math.max(0, nbLamesTotal);
 
-  const lamesRecoupees = decoupe.traveeRecoupee ? config.nbLames : 0;
-  const longueurLameRecoupee = decoupe.traveeRecoupee
-    ? round(decoupe.traveeRecoupee.largeur - (REGLES_COMMUNES.entraxePoteaux - gamme.longueurLame))
+  const lamesRecoupees = decoupe.panneauRecoupe ? config.nbLames : 0;
+  const longueurLameRecoupee = decoupe.panneauRecoupe
+    ? round(decoupe.panneauRecoupe.largeur - (REGLES_COMMUNES.entraxePoteaux - gamme.longueurLame))
     : 0;
 
-  // Repartition debut/fin vs persiennes pour la gamme PU41.
-  const lamesDebutFin = gamme.id === 'pu41' ? nbTraveesClaustra * 2 + lamesEncadrementSupp : 0;
+  // Repartition lames début/fin vs lames persiennes (2 début/fin par panneau).
+  const lamesDebutFin = gamme.id === 'persienne' ? nbPanneauxLames * 2 + lamesEncadrementSupp : 0;
   const lamesCourantes = Math.max(0, nbLamesTotal - lamesDebutFin);
 
   // --- Lisses, entretoises, accessoires -----------------------------------
   const e = gamme.empilement;
-  const ajoure = gamme.id === 'pu36' && config.variante === 'ajoure';
+  const ajoure = gamme.id === 'aluminium' && config.variante === 'ajoure';
+  const typeEntretoise = gamme.id === 'persienne' ? 'entretoise_persienne' : 'entretoise_aluminium';
+  const entretoisesEmpilees = ajoure ? Math.max(1, config.entretoisesEmpilees || 1) : 1;
   const entretoisesParLame = ajoure ? e.ajoure.entretoisesParLame : e.entretoisesParLame;
-  const nbEntretoises = entretoisesParLame * nbLamesTotal;
+  const nbEntretoises = entretoisesParLame * entretoisesEmpilees * nbLamesTotal;
 
-  const nbLisseHaute = nbTraveesClaustra;
+  const nbLisseHaute = nbPanneauxLames;
   const utiliseLisseBasse = gamme.lisseBasse.obligatoire && config.soubassement === 'lisse_basse';
-  const nbLisseBasse = utiliseLisseBasse ? nbTraveesClaustra : 0;
+  const nbLisseBasse = utiliseLisseBasse ? nbPanneauxLames : 0;
   const nbPlaqueSoubassement =
-    config.soubassement === 'plaque_soubassement' ? nbTraveesClaustra : 0;
-  const nbLisseInter = empilement.nbLissesIntermediaires * nbTraveesClaustra;
+    config.soubassement === 'plaque_soubassement' ? nbPanneauxLames : 0;
+  const nbLisseInter = empilement.nbLissesIntermediaires * nbPanneauxLames;
   const nbConnecteurs = (nbLisseHaute + nbLisseBasse) * REGLES_COMMUNES.connecteursParLisse;
 
   const surPlatine = config.pose === 'platine' || config.pose === 'muret';
-  const nbPlatines = surPlatine ? nbPoteaux : 0;
+  const nbPlatines = surPlatine ? nbPoteauxCloture : 0;
   const nbGoujons = nbPlatines * REGLES_COMMUNES.goujonsParPlatine;
-  const nbPoteauxScelles = config.pose === 'scellement' ? nbPoteaux : 0;
+  const nbPoteauxScelles = config.pose === 'scellement' ? nbPoteauxCloture : 0;
   const volumeBeton_L = nbPoteauxScelles * REGLES_COMMUNES.volumeBetonParPoteau_L;
 
   if (poteau.decoupeParPoteau > 0 && nbPoteaux > 0) {
     alertes.push({
       niveau: 'info',
       message:
-        `Poteaux a recouper : ${poteau.decoupeParPoteau} mm par poteau (fournis en ` +
+        `Poteaux à recouper : ${poteau.decoupeParPoteau} mm par poteau (fournis en ` +
         `${gamme.poteau.longueurFournie} mm). Conserver au minimum ${e.jeuHautPoteau} mm de jeu ` +
         `entre le capot et la lisse haute.`,
     });
   }
-  if (decoupe.traveeRecoupee) {
+  if (decoupe.panneauRecoupe) {
     alertes.push({
       niveau: 'info',
       message:
-        `1 travee recoupee de ${decoupe.traveeRecoupee.largeur} mm : ${lamesRecoupees} lames a recouper ` +
-        `a ${longueurLameRecoupee} mm (jeu de dilatation de ${gamme.jeuDilatationLongueur} mm a repartir ` +
-        `de chaque cote).`,
+        `1 panneau recoupé de ${decoupe.panneauRecoupe.largeur} mm : ${lamesRecoupees} lames à recouper ` +
+        `a ${longueurLameRecoupee} mm (jeu de dilatation de ${gamme.jeuDilatationLongueur} mm a répartir ` +
+        `de chaque côté).`,
     });
   }
   if (nbOuvrants > 0) {
     alertes.push({
-      niveau: 'avertissement',
+      niveau: 'info',
       message:
-        `Les portillons et portails ne figurent pas dans les notices PU11/PU36/PU41 : cotes de passage ` +
-        `et quincaillerie a confirmer au catalogue avant commande.`,
+        `${ouvrant.nom} : vantail de ${ouvrant.vantail.largeur} x ${ouvrant.vantail.hauteur} mm, ` +
+        `${poseOuvrant.nom.toLowerCase()}, emprise de ${poseOuvrant.emprise} mm sur le trace. ` +
+        `${ouvrant.normeAccessibilite}.`,
     });
+    const écart = ouvrant.vantail.hauteur - empilement.hauteur;
+    if (Math.abs(écart) > 100) {
+      alertes.push({
+        niveau: 'avertissement',
+        message:
+          `Le portillon mesure ${ouvrant.vantail.hauteur} mm de haut alors que la clôture en fait ` +
+          `${empilement.hauteur} mm : l’écart de ${Math.abs(écart)} mm sera visible en limite de propriété.`,
+      });
+    }
+    const colorisOuvrant = ouvrant.coloris.map((c) => c.id);
+    if (!colorisOuvrant.includes(config.finitionAccessoires)) {
+      alertes.push({
+        niveau: 'avertissement',
+        message:
+          `${ouvrant.nom} n’est propose qu’en ${ouvrant.coloris.map((c) => c.nom).join(', ')} : ` +
+          `la finition d’accessoires choisie ne pourra pas être tenue sur l’ouvrant.`,
+      });
+    }
   }
 
   return {
@@ -354,15 +409,17 @@ export function calepiner(configUtilisateur) {
       longueurTotale,
       longueurOuvrants,
       longueurDecorsVerticaux,
-      longueurClaustra: Math.max(0, longueurClaustra),
+      longueurCloture: Math.max(0, longueurCloture),
       entraxe: REGLES_COMMUNES.entraxePoteaux,
-      traveesPleines: decoupe.pleines,
-      traveeRecoupee: decoupe.traveeRecoupee,
-      nbTraveesClaustra,
-      nbTraveesTotal,
+      panneauxPleins: decoupe.pleines,
+      panneauRecoupe: decoupe.panneauRecoupe,
+      nbPanneauxLames,
+      nbPanneauxTotal,
     },
     quantites: {
       nbPoteaux,
+      nbPoteauxCloture,
+      nbPoteauxOuvrant,
       nbPoteauxExtremite,
       nbPoteauxAngle,
       nbPoteauxIntermediaires,
@@ -372,6 +429,7 @@ export function calepiner(configUtilisateur) {
       lamesRecoupees,
       longueurLameRecoupee,
       nbEntretoises,
+      typeEntretoise,
       nbLisseHaute,
       nbLisseBasse,
       nbLisseInter,
@@ -379,9 +437,11 @@ export function calepiner(configUtilisateur) {
       nbConnecteurs,
       nbPlatines,
       nbGoujons,
-      nbCapots: nbPoteaux,
-      nbBaguettes: config.baguetteFinition ? nbPoteaux : 0,
-      nbCapotsMuraux: config.poteauxMuraux,
+      nbPoteauxPleins,
+      nbDemiPoteauxMuraux,
+      nbCapots: nbPoteauxPleins,
+      nbBaguettes: config.baguetteFinition ? nbPoteauxCloture : 0,
+      nbDemiCapotsMuraux: nbDemiPoteauxMuraux,
       nbPoteauxScelles,
       volumeBeton_L,
       decorsHorizontaux,
