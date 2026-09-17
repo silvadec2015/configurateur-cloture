@@ -51,10 +51,19 @@ pull request reçoit sa propre URL de prévisualisation.
 
 ### GitHub Pages
 
-Alternative sans service supplémentaire : `Settings` → `Pages` → *Deploy from a
-branch* → `main` / `/ (root)`. L'URL est alors
-`silvadec2015.github.io/configurateur-cloture`. Pas d'URL de prévisualisation
-par branche, et `vercel.json` y est simplement ignoré.
+Le workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) publie
+le site à chaque push sur `main`, sans aucun réglage manuel : il lance les tests
+du moteur, assemble `index.html`, `assets/` et `src/` dans `_site`, active Pages
+au premier passage (`actions/configure-pages` avec `enablement: true`) et
+déploie. L'URL est `silvadec2015.github.io/configurateur-cloture`.
+
+**Prérequis** : GitHub Pages n'est disponible sur un dépôt **privé** qu'avec un
+plan payant (Pro, Team ou Enterprise). Sur un compte gratuit, il faut rendre le
+dépôt public — ou passer par Vercel, dont le plan gratuit accepte les dépôts
+privés.
+
+Pas d'URL de prévisualisation par branche ici, et `vercel.json` y est simplement
+ignoré.
 
 ### À savoir avant de publier
 
