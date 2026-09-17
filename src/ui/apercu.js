@@ -1,5 +1,5 @@
 /**
- * Apercu SVG : vue en élévation d’une travee type (poteaux, empilement des
+ * Aperçu SVG : vue en élévation d’une travee type (poteaux, empilement des
  * lames, lisses) et vue en plan du trace.
  */
 
@@ -17,7 +17,9 @@ function el(nom, attrs = {}) {
  * @param {string} couleur couleur des lames
  */
 export function apercuElevation(calepinage, couleur = '#3b3f44') {
-  const { config, gamme, hauteurs } = calepinage;
+  const { config, hauteurs } = calepinage;
+  const principale = calepinage.compositions.find((c) => c.nbPanneaux > 0) || calepinage.compositions[0];
+  const gamme = principale ? principale.gamme : null;
   const entraxe = calepinage.longueurs.entraxe;
   const hauteurPoteau = Math.max(hauteurs.hauteurHorsSol, 1);
   const hauteurMuret = config.pose === 'muret' ? config.hauteurMuret : 0;
@@ -28,7 +30,8 @@ export function apercuElevation(calepinage, couleur = '#3b3f44') {
     class: 'apercu',
     viewBox: `0 0 ${largeurMm} ${hauteurMm}`,
     role: 'img',
-    'aria-label': `Élévation d’une travee : ${config.nbLames} lames, ${hauteurs.empilement} mm de hauteur`,
+    'aria-label': `Élévation d’un panneau : ${principale ? principale.nbLames : 0} lames, `
+      + `${hauteurs.empilement} mm de hauteur`,
   });
 
   const sol = hauteurMm - 120;
@@ -82,7 +85,7 @@ export function apercuElevation(calepinage, couleur = '#3b3f44') {
   cote(x0 - 70, basPanneau, basPanneau - calepinage.hauteurs.empilement, `${calepinage.hauteurs.empilement} mm`);
 
   const legende = el('text', { x: x0 + entraxe / 2, y: sol + 95, 'font-size': 78, fill: 'currentColor', 'text-anchor': 'middle', opacity: .75 });
-  legende.textContent = `entraxe ${entraxe} mm - ${gamme.notice}`;
+  legende.textContent = `entraxe ${entraxe} mm${gamme ? ` — ${gamme.notice}` : ''}`;
   svg.append(legende);
 
   return svg;
@@ -91,7 +94,7 @@ export function apercuElevation(calepinage, couleur = '#3b3f44') {
 /** Vue en plan du trace (segments et angles). */
 export function apercuPlan(calepinage) {
   const segments = calepinage.config.segments.filter((s) => Number(s.longueur) > 0);
-  const svg = el('svg', { class: 'apercu', viewBox: '0 0 400 220', role: 'img', 'aria-label': 'Vue en plan du trace' });
+  const svg = el('svg', { class: 'apercu', viewBox: '0 0 400 220', role: 'img', 'aria-label': 'Vue en plan du tracé' });
   if (!segments.length) return svg;
 
   // Trace en zigzag a 90 degrés, direction alternee (droite puis bas).

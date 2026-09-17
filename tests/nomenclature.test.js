@@ -7,8 +7,7 @@ import { TARIF_DEMO } from '../src/data/tarifs.js';
 
 const projet = calepiner({
   ...CONFIG_DEFAUT,
-  gamme: 'atmosphere',
-  nbLames: 8,
+  hauteurCible: 1200,
   pose: 'platine',
   segments: [{ longueur: 9000 }],
 });
@@ -19,7 +18,8 @@ test('Chaque quantite du calepinage se retrouve dans la nomenclature', () => {
   assert.equal(ligne('lame_atmosphere').quantite, projet.quantites.nbLamesTotal);
   assert.equal(ligne('platine').quantite, projet.quantites.nbPlatines);
   assert.equal(ligne('goujon').quantite, projet.quantites.nbGoujons);
-  assert.equal(ligne('lisse').quantite, projet.quantites.nbLisseHaute + projet.quantites.nbLisseBasse);
+  const lisses = n.lignes.filter((l) => l.ref === 'lisse').reduce((t, l) => t + l.quantite, 0);
+  assert.equal(lisses, projet.quantites.nbLisseHaute + projet.quantites.nbLisseBasse);
   assert.equal(ligne('connecteur').quantite, projet.quantites.nbConnecteurs);
 });
 
@@ -50,4 +50,17 @@ test('Export CSV : un en-tete, une ligne par article et un total', () => {
 
 test('Le tarif de démonstration est explicitement marque comme non reel', () => {
   assert.equal(TARIF_DEMO.reel, false);
+});
+
+test('Clôture mixte : une ligne de lames par habillage', () => {
+  const mixte = calepiner({
+    ...CONFIG_DEFAUT,
+    hauteurCible: 1800,
+    segments: [{ longueur: 14400 }],
+    habillages: [{ gamme: 'atmosphere', panneaux: 4 }, { gamme: 'persienne', panneaux: null }],
+  });
+  const n = construireNomenclature(mixte, TARIF_DEMO);
+  assert.ok(n.lignes.some((l) => l.ref === 'lame_atmosphere'));
+  assert.ok(n.lignes.some((l) => l.ref === 'lame_persienne'));
+  assert.equal(n.resume.habillages.length, 2);
 });

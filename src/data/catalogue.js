@@ -19,6 +19,29 @@
 
 export const A_VALIDER = 'A_VALIDER';
 
+/**
+ * Hauteurs de clôture hors sol proposées au client, par pas de 150 mm.
+ * Source : sélecteur « Hauteur de clôture hors sols » du configurateur Silvadec.
+ * 1,80 m est le maximum, cohérent avec les fiches produit.
+ */
+export const HAUTEURS_CLOTURE = [
+  { valeur: 1050, libelle: '1m05' },
+  { valeur: 1200, libelle: '1m20' },
+  { valeur: 1350, libelle: '1m35' },
+  { valeur: 1500, libelle: '1m50' },
+  { valeur: 1650, libelle: '1m65' },
+  { valeur: 1800, libelle: '1m80' },
+];
+
+export const HAUTEUR_MAX_CLOTURE = 1800;
+
+/** Formate une hauteur en millimètres à la manière du catalogue : 1m80. */
+export function hauteurEnMetres(mm) {
+  const metres = Math.floor(mm / 1000);
+  const centimetres = Math.round((mm - metres * 1000) / 10);
+  return `${metres}m${String(centimetres).padStart(2, '0')}`;
+}
+
 /** Contraintes de pose communes (notices PU11/PU36/PU41 p.1 a p.4). */
 export const REGLES_COMMUNES = {
   entraxePoteaux: 1800,
@@ -147,7 +170,7 @@ export const GAMMES = {
       'Lame coextrudée recto-verso a la couleur permanente, encadree de poteaux et ' +
       "d’accessoires aluminium. Garantie 25 ans, imputrescible, sans grisaillement.",
     sourceProduit: 'Fiche produit "Lame écran Atmosphère coextrudée" (fr.silvadec.com)',
-    lame: { hauteur: 150, épaisseur: 21, longueur: 1783 },
+    lame: { hauteur: 150, epaisseur: 21, longueur: 1783 },
     longueurLame: 1783,
     finitionsLame: ['1 face lisse, 1 face structuree', 'Lisse', 'Brossee'],
     // Coloris relevés sur la fiche produit consultée. La fiche evoque une
@@ -172,8 +195,10 @@ export const GAMMES = {
     argumentaire:
       'Lame bois composite de la gamme Élégance. La notice PU11 deconseille sa pose ' +
       'sur muret a revetement poreux (risque de coulures) et oriente alors vers Atmosphère.',
-    sourceProduit: 'Gamme citee par la notice PU11 V23 p.2 - fiche produit non consultée',
-    lame: { hauteur: 150, épaisseur: null, longueur: 1783 },
+    sourceProduit: 'Gamme citée par la notice PU11 V23 p.2 — fiche produit non consultée',
+    /** Absente du configurateur tant que sa fiche produit n'est pas intégrée. */
+    proposeAuConfigurateur: false,
+    lame: { hauteur: 150, epaisseur: null, longueur: 1783 },
     longueurLame: 1783,
     finitionsLame: [],
     coloris: [],
@@ -196,7 +221,7 @@ export const GAMMES = {
       'décors de la gamme, y compris en alternance avec des panneaux composite.',
     sourceProduit: 'Fiche produit "Lame écran Aluminium" (fr.silvadec.com)',
     notice: 'PU36 V3',
-    lame: { hauteur: 148, épaisseur: 21, longueur: 1797 },
+    lame: { hauteur: 148, epaisseur: 21, longueur: 1797 },
     longueurLame: 1797,
     jeuDilatationLongueur: 3,
     finitionsLame: ['Mat sablée'],
@@ -267,7 +292,7 @@ export const GAMMES = {
       "la lumière, le vent et la petite faune, ce qui repond aux exigences de certains PLU.",
     sourceProduit: 'Fiche produit "Lame persienne en Aluminium" (fr.silvadec.com)',
     notice: 'PU41 V1',
-    lame: { hauteur: 127, épaisseur: 21, longueur: 1797 },
+    lame: { hauteur: 127, epaisseur: 21, longueur: 1797 },
     longueurLame: 1797,
     jeuDilatationLongueur: 3,
     finitionsLame: ['Mat sablée'],
@@ -410,7 +435,7 @@ export const OUVRANTS = [
     nom: 'Portillon Aluminium',
     type: 'portillon',
     sourceProduit: 'Fiche produit "Portillon Aluminium" (fr.silvadec.com)',
-    vantail: { largeur: 975, hauteur: 1750, épaisseur: 60 },
+    vantail: { largeur: 975, hauteur: 1750, epaisseur: 60 },
     largeurEntrePoteaux: 1060,
     poteau: { section: '100 x 100 mm', longueur: 2250 },
     passageUtile: 900,
@@ -433,6 +458,11 @@ export const OUVRANTS = [
     ],
   },
 ];
+
+/** Habillages proposés au client dans le configurateur. */
+export function gammesProposees() {
+  return Object.values(GAMMES).filter((g) => g.proposeAuConfigurateur !== false);
+}
 
 export function getGamme(id) {
   const g = GAMMES[id];

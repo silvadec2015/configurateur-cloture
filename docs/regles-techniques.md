@@ -29,6 +29,26 @@ noms commerciaux, coloris, dimensions de lame et garanties.
 Hauteur maximale annoncée par les fiches Atmosphère, Aluminium et Persienne :
 **1,80 m**.
 
+### Hauteurs proposées au client
+
+Le sélecteur du configurateur du fabricant propose six hauteurs hors sol, par
+pas de 150 mm. Chacune correspond à un nombre entier de lames, et la hauteur
+réellement obtenue dépend de l'habillage :
+
+| Hauteur visée | Atmosphère | Aluminium | Persienne |
+|---------------|------------|-----------|-----------|
+| 1m05 | 7 lames — 1054 mm | 7 lames — 1034 mm | 7 lames — 1022 mm |
+| 1m20 | 8 lames — 1200 mm | 8 lames — 1180 mm | 8 lames — 1167 mm |
+| 1m35 | 9 lames — 1346 mm | 9 lames — 1326 mm | 9 lames — 1311 mm |
+| 1m50 | 10 lames — 1495 mm | 10 lames — 1472 mm | 10 lames — 1456 mm |
+| 1m65 | 11 lames — 1641 mm | 11 lames — 1618 mm | 11 lames — 1601 mm |
+| 1m80 | 12 lames — 1787 mm | 12 lames — 1764 mm | 12 lames — 1745 mm |
+
+Les valeurs Atmosphère tombent exactement sur la règle d'empilement de la notice
+PU11 (lisse basse 12 mm + première lame 150 mm + lames suivantes 146 mm + une
+lisse intermédiaire toutes les trois lames + lisse haute 10 mm), ce qui confirme
+le modèle de calcul.
+
 ### Portillon Aluminium
 
 | Donnée | Valeur |

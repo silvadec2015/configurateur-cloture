@@ -4,9 +4,9 @@
  */
 
 import { CONFIG_DEFAUT } from '../core/calepinage.js';
-import { GAMMES } from '../data/catalogue.js';
+import { GAMMES, HAUTEURS_CLOTURE } from '../data/catalogue.js';
 
-const CLE_STOCKAGE = 'configurateur-cloture:v2';
+const CLE_STOCKAGE = 'configurateur-cloture:v3';
 
 function encode(config) {
   return btoa(unescape(encodeURIComponent(JSON.stringify(config)))).replace(/=+$/, '');
@@ -17,18 +17,29 @@ function decode(chaine) {
 }
 
 /**
- * Un lien ou un stockage anterieur peut porter une gamme qui n’existe plus :
- * on repart alors de la configuration par defaut plutot que de planter.
+ * Un lien ou un stockage antérieur peut porter une gamme qui n'existe plus ou
+ * une structure plus ancienne : on repart alors de la configuration par défaut
+ * plutôt que de planter.
  */
 function assainir(config) {
   const propre = { ...CONFIG_DEFAUT, ...config };
-  if (!GAMMES[propre.gamme]) return { ...CONFIG_DEFAUT };
-  const gamme = GAMMES[propre.gamme];
-  if (gamme.coloris.length && !gamme.coloris.some((c) => c.id === propre.coloris)) {
-    propre.coloris = gamme.coloris[0].id;
+
+  const habillages = (propre.habillages || []).filter((h) => h && GAMMES[h.gamme]);
+  propre.habillages = habillages.length ? habillages : CONFIG_DEFAUT.habillages.map((h) => ({ ...h }));
+
+  const coloris = { ...CONFIG_DEFAUT.coloris, ...(propre.coloris || {}) };
+  for (const [id, gamme] of Object.entries(GAMMES)) {
+    if (gamme.coloris.length && !gamme.coloris.some((c) => c.id === coloris[id])) {
+      coloris[id] = gamme.coloris[0].id;
+    }
   }
+  propre.coloris = coloris;
+
   if (!Array.isArray(propre.segments) || !propre.segments.length) {
-    propre.segments = CONFIG_DEFAUT.segments;
+    propre.segments = CONFIG_DEFAUT.segments.map((s) => ({ ...s }));
+  }
+  if (!HAUTEURS_CLOTURE.some((h) => h.valeur === propre.hauteurCible)) {
+    propre.hauteurCible = CONFIG_DEFAUT.hauteurCible;
   }
   return propre;
 }
