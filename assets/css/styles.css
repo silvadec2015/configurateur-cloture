@@ -203,3 +203,20 @@ tfoot td { font-weight: 700; border-bottom: 0; }
   .carte { border: 0; box-shadow: none; padding: 0; }
   body { background: #fff; color: #000; }
 }
+
+/* --- Saisie des côtés (étape Dimensions) -------------------------------- */
+.cotes { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.cote__titre { font-size: .84rem; font-weight: 650; margin: 0 0 6px; }
+.cote__champs { display: flex; align-items: center; gap: 8px; }
+.cote__champs input { width: 92px; }
+.cote__unite { color: var(--texte-doux); font-size: .86rem; }
+.resultat { margin: 14px 0 0; font-size: .95rem; }
+.resultat strong {
+  display: inline-block; min-width: 72px; padding: 6px 12px; margin-right: 6px;
+  background: var(--accent-clair); border-radius: 8px; text-align: center;
+}
+.visuellement-cache {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.choix input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }

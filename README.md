@@ -26,7 +26,7 @@ Il faut simplement le servir en HTTP (les modules ES ne se chargent pas en
 npm start            # http://localhost:8080
 # ou
 python3 -m http.server 8080
-npm test             # 33 tests du moteur de calcul (node --test)
+npm test             # 39 tests du moteur de calcul (node --test)
 ```
 
 ## Mise en ligne
@@ -71,22 +71,36 @@ par branche, et `vercel.json` y est simplement ignoré.
 
 ## Le parcours
 
-Cinq étapes, avec synthèse et aperçu permanents :
+Il reprend celui du configurateur du fabricant, en cinq étapes, avec synthèse et
+aperçu permanents :
 
-1. **Lames** — lame écran Atmosphère, Élégance, Aluminium (panneau plein ou
-   ajouré, entretoises de 15 mm cumulables) ou lame persienne ; finition,
-   coloris de lame et finition des accessoires aluminium.
-2. **Tracé** — segments de la clôture (chaque changement de direction crée un
-   angle à 90 degrés) et portillon aluminium, en pose entre piliers maçonnés ou
-   sur poteaux.
-3. **Hauteur & pose** — nombre de lames ou hauteur visée, bas de panneau (lisse
-   basse ou plaque de soubassement), pose sur platines, scellement béton ou sur
-   muret.
+1. **Dimensions** — hauteur de clôture hors sol choisie dans la liste du
+   catalogue (`1m05` à `1m80`), type de clôture linéaire ou angulaire, nombre de
+   côtés et longueur de chaque côté en mètres et centimètres.
+2. **Composition** — un ou plusieurs habillages, qui peuvent se mélanger sur une
+   même clôture : lame écran Atmosphère, lame écran Aluminium (panneau plein ou
+   ajouré, entretoises de 15 mm cumulables) et lame persienne. Répartition des
+   panneaux entre habillages, coloris de chaque lame et finition des accessoires.
+3. **Pose** — platines, scellement béton ou muret, bas de panneau composite,
+   portillon et son type de pose.
 4. **Décors & accessoires** — décors horizontaux (300 mm, en remplacement de
    2 lames) et verticaux (panneau dédié de 855 mm), baguettes de finition,
    départs muraux en demi-poteau.
 5. **Récapitulatif** — nomenclature valorisée, points de vigilance chantier,
    export CSV / JSON, impression PDF et lien de partage du projet.
+
+Les hauteurs sont exprimées en mètres (`1m65`) comme au catalogue ; le détail en
+millimètres reste affiché là où il engage le chantier (longueur de poteau,
+recoupe des lames).
+
+### Mélanger les habillages
+
+Une même clôture peut alterner composite, aluminium et persienne d'un panneau à
+l'autre. Comme les lames n'ont pas la même hauteur, le nombre de lames est
+calculé habillage par habillage pour approcher la hauteur visée : à `1m80`, le
+composite atteint 1787 mm, l'aluminium 1764 mm et la persienne 1745 mm. Le
+configurateur signale l'écart quand il dépasse 20 mm, et retient pour les poteaux
+l'habillage le plus haut.
 
 ### Calculs couverts
 
@@ -145,8 +159,8 @@ ne dépendent ni du DOM ni d'un framework.
 - **Les prix affichés sont des prix de démonstration**, ils ne proviennent
   d'aucun tarif fabricant.
 - La gamme **Élégance** est citée par la notice PU11 mais sa fiche produit n'a
-  pas été consultée : coloris, finitions et épaisseur de lame restent à
-  renseigner.
+  pas été consultée : elle reste dans le catalogue (`proposeAuConfigurateur:
+  false`) sans être proposée au client, comme dans le configurateur du fabricant.
 - Aucun **portail** n'est proposé : seule la fiche du portillon aluminium est
   documentée. L'emprise en pose sur poteaux (1260 mm) additionne la largeur
   entre poteaux et deux poteaux de 100 mm, ce qui reste une interprétation de la
