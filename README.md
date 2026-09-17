@@ -87,7 +87,8 @@ aperçu permanents :
    2 lames) et verticaux (panneau dédié de 855 mm), baguettes de finition,
    départs muraux en demi-poteau.
 5. **Récapitulatif** — nomenclature valorisée, points de vigilance chantier,
-   export CSV / JSON, impression PDF et lien de partage du projet.
+   fiche récapitulative en JPG, export CSV / JSON, impression PDF et lien de
+   partage du projet.
 
 Les hauteurs sont exprimées en mètres (`1m65`) comme au catalogue ; le détail en
 millimètres reste affiché là où il engage le chantier (longueur de poteau,
@@ -136,6 +137,7 @@ src/core/calepinage.js     moteur de calcul (fonctions pures, testées)
 src/core/nomenclature.js   nomenclature valorisée + export CSV
 src/ui/app.js              parcours en étapes, rendu, événements
 src/ui/apercu.js           aperçus SVG (élévation d'un panneau, vue en plan)
+src/ui/image.js            fiche récapitulative JPEG (rendu canvas)
 src/ui/etat.js             persistance locale et lien de partage
 tests/                     tests node:test du moteur et de la nomenclature
 vercel.json                configuration d'hébergement statique
@@ -144,6 +146,18 @@ vercel.json                configuration d'hébergement statique
 La séparation `core` / `ui` permet de réutiliser le moteur ailleurs (API,
 back-office, script de chiffrage) : `calepiner()` et `construireNomenclature()`
 ne dépendent ni du DOM ni d'un framework.
+
+## Les quatre exports
+
+| Format | À quoi il sert |
+|--------|----------------|
+| **JPG** | Fiche récapitulative d'une page : aperçus, chiffres clés et nomenclature. À envoyer par mail ou messagerie, lisible sans outil. |
+| **CSV** | Nomenclature seule, à ouvrir dans un tableur pour chiffrer avec votre tarif. |
+| **JSON** | Configuration, calepinage et nomenclature complets, pour réinjecter le projet dans un autre outil. |
+| **PDF** | Impression navigateur de la page récapitulative. |
+
+S'y ajoute le **lien de partage** : toute la configuration est encodée dans
+l'URL, qui rouvre le projet tel quel.
 
 ## Adapter à votre catalogue
 

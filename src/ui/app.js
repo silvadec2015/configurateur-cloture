@@ -15,6 +15,7 @@ import { calepiner } from '../core/calepinage.js';
 import { construireNomenclature, nomenclatureVersCSV } from '../core/nomenclature.js';
 import { TARIF_ACTIF } from '../data/tarifs.js';
 import { apercuElevation, apercuPlan } from './apercu.js';
+import { imageRecapitulative } from './image.js';
 import { chargerEtat, sauverEtat, lienPartage } from './etat.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -370,6 +371,7 @@ function etapeDevis() {
 
     <div class="actions">
       <button type="button" class="bouton bouton--primaire" data-action="imprimer">Imprimer / PDF</button>
+      <button type="button" class="bouton bouton--fantome" data-action="image">Télécharger la fiche (JPG)</button>
       <button type="button" class="bouton bouton--fantome" data-action="csv">Télécharger le CSV</button>
       <button type="button" class="bouton bouton--fantome" data-action="json">Télécharger le JSON</button>
       <button type="button" class="bouton bouton--fantome" data-action="lien">Copier le lien du projet</button>
@@ -594,6 +596,25 @@ $('#formulaire').addEventListener('click', async (ev) => {
     case 'imprimer':
       window.print();
       break;
+    case 'image': {
+      const composition = calc.compositions.find((c) => c.nbPanneaux > 0) || calc.compositions[0];
+      const teinte = composition
+        ? (composition.gamme.coloris.find((c) => c.id === etat.coloris[composition.gamme.id]) || composition.gamme.coloris[0])
+        : null;
+      bouton.disabled = true;
+      const libelle = bouton.textContent;
+      bouton.textContent = 'Génération…';
+      try {
+        const blob = await imageRecapitulative(calc, construireNomenclature(calc, TARIF_ACTIF), {
+          couleur: teinte ? teinte.hex : undefined,
+        });
+        if (blob) telechargerBlob('recapitulatif-cloture.jpg', blob);
+      } finally {
+        bouton.disabled = false;
+        bouton.textContent = libelle;
+      }
+      break;
+    }
     case 'csv':
       telecharger('nomenclature-cloture.csv', nomenclatureVersCSV(construireNomenclature(calc, TARIF_ACTIF)), 'text/csv;charset=utf-8');
       break;
@@ -625,7 +646,10 @@ $('#precedent').addEventListener('click', () => { etapeCourante = Math.max(0, et
 $('#suivant').addEventListener('click', () => { etapeCourante = Math.min(ETAPES.length - 1, etapeCourante + 1); rendre(); });
 
 function telecharger(nomFichier, contenu, type) {
-  const blob = new Blob([contenu], { type });
+  telechargerBlob(nomFichier, new Blob([contenu], { type }));
+}
+
+function telechargerBlob(nomFichier, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
