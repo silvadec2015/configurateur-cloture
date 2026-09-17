@@ -22,6 +22,46 @@ python3 -m http.server 8080
 npm test             # 27 tests du moteur de calcul (node --test)
 ```
 
+## Mise en ligne
+
+Le site est statique : il n'y a ni build ni dependance a installer, l'hebergeur
+sert les fichiers tels quels.
+
+### Vercel
+
+Le fichier [`vercel.json`](vercel.json) fixe deja la configuration (aucun build,
+racine du depot comme dossier de sortie, URLs sans `.html`). Il suffit donc
+d'importer le depot :
+
+1. Sur [vercel.com](https://vercel.com), se connecter avec GitHub.
+2. *Add New... -> Project*, puis importer `configurateur-cloture`. Si le depot
+   n'apparait pas, cliquer sur *Adjust GitHub App Permissions* pour l'autoriser.
+3. Laisser les reglages proposes : `vercel.json` les impose de toute facon.
+4. *Deploy*. L'URL obtenue ressemble a `configurateur-cloture.vercel.app`.
+
+Ensuite chaque push sur `main` redeploie automatiquement, et chaque branche de
+pull request recoit sa propre URL de previsualisation.
+
+### GitHub Pages
+
+Alternative sans service supplementaire : `Settings` -> `Pages` -> *Deploy from
+a branch* -> `main` / `/ (root)`. L'URL est alors
+`silvadec2015.github.io/configurateur-cloture`. Pas d'URL de previsualisation
+par branche, et `vercel.json` y est simplement ignore.
+
+### A savoir avant de publier
+
+- **L'URL est publique** : toute personne qui la connait voit le configurateur,
+  donc la grille tarifaire embarquee. Tant qu'il s'agit du tarif de
+  demonstration c'est sans consequence ; avec un tarif reel, il faut choisir
+  entre une URL assumee comme publique, une protection par mot de passe
+  (plan payant chez Vercel) et la diffusion des seules quantites
+  (`TARIF_ACTIF = null`).
+- **Pas d'empreinte dans les noms de fichiers** : `app.js` garde son nom d'une
+  version a l'autre. Les en-tetes de cache imposent donc une revalidation a
+  chaque chargement, ce qui evite de servir un module a jour a cote d'un module
+  perime apres un deploiement.
+
 ## Ce que fait le configurateur
 
 Un parcours en 5 etapes, avec synthese et apercu permanents :
@@ -57,6 +97,7 @@ Un parcours en 5 etapes, avec synthese et apercu permanents :
 
 ```
 index.html                 page unique (wizard + synthese)
+vercel.json                configuration d'hebergement statique (Vercel)
 assets/css/styles.css      theme clair / sombre, impression
 src/data/catalogue.js      cotes des notices PU11 / PU36 / PU41, poses, coloris, decors
 src/data/tarifs.js         grille tarifaire (DEMONSTRATION - a remplacer)
