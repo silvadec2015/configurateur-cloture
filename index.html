@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Configurateur cloture &amp; portillon</title>
+<meta name="description" content="Calculette de calepinage, nomenclature et estimation pour un projet de cloture claustra et portillon." />
+<link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+<header class="entete">
+  <div class="entete__marque">
+    <span class="entete__logo" aria-hidden="true"></span>
+    <div>
+      <p class="entete__titre">Configurateur cloture &amp; portillon</p>
+      <p class="entete__sous-titre">Calepinage, nomenclature et estimation de votre projet</p>
+    </div>
+  </div>
+  <nav class="etapes" id="etapes" aria-label="Etapes du configurateur"></nav>
+</header>
+
+<main class="page">
+  <section class="colonne-formulaire">
+    <form id="formulaire" novalidate>
+      <div id="etape-contenu" class="carte etape"></div>
+      <div class="navigation">
+        <button type="button" class="bouton bouton--fantome" id="precedent">&larr; Precedent</button>
+        <button type="button" class="bouton bouton--primaire" id="suivant">Suivant &rarr;</button>
+      </div>
+    </form>
+    <p class="mention-legale">
+      Regles de calepinage issues des notices de montage <strong>PU11 V23</strong> (bois composite),
+      <strong>PU36 V3</strong> (aluminium) et <strong>PU41 V1</strong> (persienne aluminium).
+      Estimation indicative hors pose, hors livraison et hors terrassement.
+    </p>
+  </section>
+
+  <aside class="colonne-synthese">
+    <div class="carte synthese" id="synthese"></div>
+  </aside>
+</main>
+
+<script type="module" src="src/ui/app.js"></script>
+</body>
+</html>

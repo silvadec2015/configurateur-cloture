@@ -1,0 +1,12 @@
+{
+  "name": "configurateur-cloture",
+  "version": "1.0.0",
+  "description": "Calculette / configurateur de cloture et portillon (calepinage + nomenclature + devis) base sur les notices de montage Silvadec PU11, PU36 et PU41.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js"
+  },
+  "license": "UNLICENSED"
+}
