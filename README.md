@@ -31,16 +31,43 @@ npm test             # 33 tests du moteur de calcul (node --test)
 
 ## Mise en ligne
 
-Le fichier [`vercel.json`](vercel.json) fixe la configuration d'hébergement
-(aucun build, racine du dépôt servie, URLs sans `.html`) : il suffit d'importer
-le dépôt sur [vercel.com](https://vercel.com) et de déployer. Alternative sans
-service supplémentaire : `Settings` → `Pages` → *Deploy from a branch* → `main`
-/ `/ (root)`.
+Le site est statique : il n'y a ni build ni dépendance à installer, l'hébergeur
+sert les fichiers tels quels.
 
-Deux points avant de publier : l'URL est publique et expose la grille tarifaire
-embarquée ; et comme les fichiers ne portent pas d'empreinte dans leur nom, les
-en-têtes imposent une revalidation à chaque chargement pour ne pas servir un
-module à jour à côté d'un module périmé.
+### Vercel
+
+Le fichier [`vercel.json`](vercel.json) fixe déjà la configuration (aucun build,
+racine du dépôt comme dossier de sortie, URLs sans `.html`). Il suffit donc
+d'importer le dépôt :
+
+1. Sur [vercel.com](https://vercel.com), se connecter avec GitHub.
+2. *Add New… → Project*, puis importer `configurateur-cloture`. Si le dépôt
+   n'apparaît pas, cliquer sur *Adjust GitHub App Permissions* pour l'autoriser.
+3. Laisser les réglages proposés : `vercel.json` les impose de toute façon.
+4. *Deploy*. L'URL obtenue ressemble à `configurateur-cloture.vercel.app`.
+
+Ensuite chaque push sur `main` redéploie automatiquement, et chaque branche de
+pull request reçoit sa propre URL de prévisualisation.
+
+### GitHub Pages
+
+Alternative sans service supplémentaire : `Settings` → `Pages` → *Deploy from a
+branch* → `main` / `/ (root)`. L'URL est alors
+`silvadec2015.github.io/configurateur-cloture`. Pas d'URL de prévisualisation
+par branche, et `vercel.json` y est simplement ignoré.
+
+### À savoir avant de publier
+
+- **L'URL est publique** : toute personne qui la connaît voit le configurateur,
+  donc la grille tarifaire embarquée. Tant qu'il s'agit du tarif de
+  démonstration c'est sans conséquence ; avec un tarif réel, il faut choisir
+  entre une URL assumée comme publique, une protection par mot de passe (plan
+  payant chez Vercel) et la diffusion des seules quantités
+  (`TARIF_ACTIF = null`).
+- **Pas d'empreinte dans les noms de fichiers** : `app.js` garde son nom d'une
+  version à l'autre. Les en-têtes de cache imposent donc une revalidation à
+  chaque chargement, ce qui évite de servir un module à jour à côté d'un module
+  périmé après un déploiement.
 
 ## Le parcours
 
